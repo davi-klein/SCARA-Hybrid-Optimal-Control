@@ -70,8 +70,8 @@ dq0 = [0.0; 0.0; 0.0];
 
 %% 5. Controller Gains (Initial Tuning for PSO later)
 % Position Control Gains (XY Plane)
-Kp_p = diag([500.0, 500.0, 0.0]);
-Kd_p = diag([50.0, 50.0, 0.0]);
+Kp_p = diag([5000.0, 5000.0, 0.0]);
+Kd_p = diag([500.0, 500.0, 0.0]);
 
 % Force Control Gains (Z Axis)
 Kp_f = diag([0.0, 0.0, 1.5]);
