@@ -1,0 +1,9 @@
+# MATLAB / Simulink auto-generated files and caches
+slprj/
+*.asv
+*.m~
+*.slxc
+*.autosave
+*.mexw64
+*.mexa64
+*.mexmac
