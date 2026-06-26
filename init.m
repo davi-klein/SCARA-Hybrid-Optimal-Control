@@ -60,7 +60,7 @@ env_damping = 150.0;     % Surface damping (N.s/m)
 z_surface = 0.0;         % Location of the rigid surface (m)
 
 %% 4. Initial Conditions & Gravity
-g = 9.81; % Gravity acceleration (m/s^2)
+g = 9.807; % Gravity acceleration (m/s^2)
 
 % Initial joint positions [q1 (rad); q2 (rad); d3 (m)]
 q0 = [pi/4; pi/4; 0.10]; 
