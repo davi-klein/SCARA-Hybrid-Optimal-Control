@@ -38,12 +38,21 @@ function J_total = cost_function_scara(particle)
     
     % 3. Data Extraction
     t = out.tout;
-    ep = out.error_p; 
-    ef = out.error_f; 
-    tau = out.tau; 
-    dq = out.dq;   
-    ddq = out.ddq; 
-    q = out.q;     
+    ep  = squeeze(out.error_p); 
+    ef  = squeeze(out.error_f); 
+    tau = squeeze(out.tau); 
+    dq  = squeeze(out.dq);   
+    ddq = squeeze(out.ddq); 
+    q   = squeeze(out.q);
+
+    if size(ep, 1) == 3
+        ep  = ep';
+        ef  = ef';
+        tau = tau';
+        dq  = dq';
+        ddq = ddq';
+        q   = q';
+    end
     
     % 4. Performance Evaluation (ITAE)
     geometric_error = sqrt(ep(:, 1).^2 + ep(:, 2).^2);
