@@ -30,8 +30,9 @@ function J_total = cost_function_scara(particle)
     % 2. Execution
     try
         out = sim(simIn);
-    catch
+    catch ME
         % Catch integration failures (e.g., extreme stiffness from unstable gains)
+        fprintf('Simulation crash: %s\n', ME.message);
         J_total = 1e6;
         return;
     end
@@ -53,6 +54,10 @@ function J_total = cost_function_scara(particle)
         ddq = ddq';
         q   = q';
     end
+    detJ = squeeze(out.detJ); % Get the determinant history
+
+    singularity_threshold = 0.001;
+    singularity_violation = sum(max(0, singularity_threshold - abs(detJ)).^2);
     
     % 4. Performance Evaluation (ITAE)
     geometric_error = sqrt(ep(:, 1).^2 + ep(:, 2).^2);
@@ -83,8 +88,10 @@ function J_total = cost_function_scara(particle)
     
     % Penalty weighting
     W_penalty = 10000.0; 
-    penalty_cost = W_penalty * (tau_violation + dq_violation + ddq_violation + q_violation);
-    
+    penalty_cost = W_penalty * (tau_violation + dq_violation + ddq_violation + q_violation + singularity_violation);
+
+    % Debugging: Print min determinant found in this run
+    % fprintf('Min det(J) in this sim: %.6f\n', min(abs(detJ)));
     % 6. Total Cost Aggregation
     J_total = J_base + penalty_cost;
     
