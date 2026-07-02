@@ -14,7 +14,9 @@ function J_total = cost_function_scara(particle)
     
     % 1. Simulation Setup
     simIn = Simulink.SimulationInput('SCARAHybCtrl');
-    simIn = simIn.setModelParameter('Solver', 'ode15s');
+    simIn = simIn.setModelParameter('Solver', 'ode23t');
+    simIn = simIn.setModelParameter('MaxStep', '0.01');
+    simIn = simIn.setModelParameter('RelTol', '1e-3');
     
     % Map particle array to diagonal gain matrices
     Kp_p_matrix = diag([particle(1), particle(2), 0.0]);
