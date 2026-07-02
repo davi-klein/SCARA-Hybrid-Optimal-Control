@@ -35,7 +35,7 @@ function J_total = cost_function_scara(particle)
     catch ME
         % Catch integration failures (e.g., extreme stiffness from unstable gains)
         fprintf('Simulation crash: %s\n', ME.message);
-        J_total = 1e6;
+        J_total = 1e12;
         return;
     end
     
@@ -98,6 +98,6 @@ function J_total = cost_function_scara(particle)
     J_total = J_base + penalty_cost;
     
     if isnan(J_total) || isinf(J_total)
-        J_total = 1e6;
+        J_total = 1e12;
     end
 end
