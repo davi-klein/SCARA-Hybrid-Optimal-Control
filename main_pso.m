@@ -65,6 +65,26 @@ fprintf('======================================================\n');
 Simulink.fileGenControl('reset');
 fprintf('Workers shut down.\n');
 
-post_process_results(best_gains, best_cost, optimization_time, output);
+if ~exist('data', 'dir')
+    mkdir('data');
+end
 
+pso_results = struct();
+pso_results.best_gains = best_gains;
+pso_results.Kp_x = best_gains(1);
+pso_results.Kp_y = best_gains(2);
+pso_results.Kd_x = best_gains(3);
+pso_results.Kd_y = best_gains(4);
+pso_results.Kp_f = best_gains(5);
+pso_results.Ki_f = best_gains(6);
+pso_results.Kd_f = best_gains(7);
+pso_results.best_cost = best_cost;
+pso_results.optimization_time = optimization_time;
+pso_results.iterations = output.iterations;
+
+timestamp = char(datetime('now', 'Format', 'yyyy_MM_dd_HHmm'));
+filename = fullfile('data', sprintf('optimal_gains_%s.mat', timestamp)); 
+save(filename, 'pso_results');
+
+fprintf('\nResults successfully saved to: %s\n', filename);
 rmpath(fullfile(pwd, 'src'));
