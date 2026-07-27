@@ -7,32 +7,31 @@ clear; clc; close all;
 addpath(fullfile(pwd, 'src'));
 
 % 2. Workspace Initialization
-% Loads physical parameters, initial states, and base matrices from the src folder
 fprintf('Initializing workspace parameters...\n');
-init; 
+init;
 
 % 3. Search Space Definition
-% Candidate vector mapping: [Kp_x, Kp_y, Kd_x, Kd_y, Kp_f, Ki_f]
-num_vars = 6;
+% Candidate vector mapping: [Kp_x, Kp_y, Kd_x, Kd_y, Kp_f, Ki_f, Kad_f]
+num_vars = 7;
 
-% Lower bounds (minimum stiffness required for basic stability)
-LB = [0.0, 0.0,  0.0,  0.0,  0.0,  0.0];
+% Lower bounds
+LB = [0.0, 0.0, 10.0, 0.0, 0.0, 0.5, 10.0];
 
 % Upper bounds (maximum stiffness before mechanical resonance/chattering)
-UB = [20000.0, 20000.0, 2000.0, 2000.0, 10.0, 50.0];
+UB = [9660.78, 2526.61, 307.49, 80.42, 5.0, 10.0, 300.0];
 
 % 4. Algorithm Configuration
 fprintf('Configuring Particle Swarm Optimization...\n');
 
-% Set PSO options. Enabling 'UseParallel' automatically distributes the 
-% Simulink evaluations across available CPU cores. 'pswplotbestf' provides
-% a live updating chart of the convergence.
+initial_seed = [4800.0, 1200.0, 150.0, 40.0, 2.5, 5.0, 150.0];
+
 options = optimoptions('particleswarm', ...
-    'SwarmSize', 50, ...
-    'MaxIterations', 100, ...
+    'SwarmSize', 30, ...
+    'MaxIterations', 300, ...
     'Display', 'iter', ...
-    'UseParallel', false, ...
-    'PlotFcn', 'pswplotbestf'); 
+    'UseParallel', true, ...
+    'PlotFcn', 'pswplotbestf', ...
+    'InitialSwarmMatrix', initial_seed); 
 
 % 5. Main Optimization Loop
 fprintf('Starting Control Optimization...\n');
@@ -40,6 +39,8 @@ fprintf('Starting Control Optimization...\n');
 % Define the objective function as an anonymous function
 objective_function = @(particle) cost_function_scara(particle);
 
+% cache collision avoidance
+cost_function_scara(LB);
 tic;
 % Execute the built-in PSO algorithm
 [best_gains, best_cost, exitflag, output] = particleswarm(objective_function, num_vars, LB, UB, options);
@@ -58,6 +59,12 @@ fprintf('Kd_x = %.2f\n', best_gains(3));
 fprintf('Kd_y = %.2f\n', best_gains(4));
 fprintf('Kp_f = %.2f\n', best_gains(5));
 fprintf('Ki_f = %.2f\n', best_gains(6));
+fprintf('Kad_f = %.2f\n', best_gains(7));
 fprintf('======================================================\n');
+
+Simulink.fileGenControl('reset');
+fprintf('Workers shut down.\n');
+
+post_process_results(best_gains, best_cost, optimization_time, output);
 
 rmpath(fullfile(pwd, 'src'));
