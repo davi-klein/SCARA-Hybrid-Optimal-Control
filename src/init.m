@@ -24,7 +24,7 @@
 % """
 % =========================================================================
 
-% 1. Physical & Geometric Parameters (Adapted from Boschetti & Sinico, 2025)
+% 1. Physical & Geometric Parameters (Adapted from Boschetti and Sinico, 2025)
 % Link lengths (meters) 
 L1 = 0.300; % 300 mm
 L2 = 0.250; % 250 mm
@@ -62,7 +62,7 @@ z_surface = 0.0;         % Location of the rigid surface (m)
 g = 9.807; % Gravity acceleration (m/s^2)
 
 % Initial joint positions [q1 (rad); q2 (rad); d3 (m)]
-q0 = [pi/4; pi/4; 0.0]; 
+q0 = [1.1251; 1.6081; 0.0];
 
 % Initial joint velocities [dq1; dq2; dd3]
 dq0 = [0.0; 0.0; 0.0];
@@ -77,9 +77,9 @@ Kp_f = diag([0.0, 0.0, 2.0]);
 Ki_f = diag([0.0, 0.0, 0.0]);
 
 % Active Damping for Z-axis impact (Raibert-Craig addition)
-Kd_f = 25.0;
+Kad_f = 25.0;
 
 % Derivative filter
 N = 50;
 
-disp('Workspace successfully initialized. Ready to run the Simulink model.');
+%disp('Workspace successfully initialized. Ready to run the Simulink model.');
