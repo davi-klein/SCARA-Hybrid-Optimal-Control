@@ -31,7 +31,9 @@ function J_total = cost_function_scara(particle)
     
     evalin('base', 'init');
     
+   
     simIn = Simulink.SimulationInput('SCARAHybCtrl');
+    simIn = simIn.setModelParameter('SimulationMode', 'normal');
     simIn = simIn.setModelParameter('Solver', 'ode15s');
     simIn = simIn.setModelParameter('MaxStep', '0.01');
     simIn = simIn.setModelParameter('RelTol', '1e-3');
@@ -59,12 +61,12 @@ function J_total = cost_function_scara(particle)
     t = out.tout;
     ep  = squeeze(out.error_p); 
     ef  = squeeze(out.error_f); 
-    tau = squeeze(out.tau); 
+    tau_cmd = squeeze(out.tau_cmd); 
     dq  = squeeze(out.dq);    
     q   = squeeze(out.q);
     
     if size(ep, 1) == 3
-        ep  = ep'; ef  = ef'; tau = tau';
+        ep  = ep'; ef  = ef'; tau_cmd = tau_cmd';
         dq  = dq'; q   = q';
     end
     detJ = squeeze(out.detJ);
@@ -75,9 +77,19 @@ function J_total = cost_function_scara(particle)
     
     ITAE_pos = trapz(t, t .* geometric_error);
     ITAE_force = trapz(t, t .* force_error);
+
+    ITAE_pos_nominal = 0.3505; 
+    ITAE_force_nominal = 79.9975;
     
-    w = 0.25;
-    J_base = ITAE_pos + w * ITAE_force;
+    % Normalized costs
+    J_pos_norm = ITAE_pos / ITAE_pos_nominal;
+    J_force_norm = ITAE_force / ITAE_force_nominal;
+    
+    w_pos = 0.5;
+    w_force = 0.5;
+    
+    % BAse Cost
+    J_base = (w_pos * J_pos_norm) + (w_force * J_force_norm);
     
     % 2. Limits and Constraints
     tau_max = [60.0, 30.0, 150.0];      
@@ -85,7 +97,7 @@ function J_total = cost_function_scara(particle)
     q_min   = [-1.745, -2.443, -0.05];  
     q_max   = [1.745, 2.443, 0.2]; 
 
-    peak_tau = max(abs(tau));
+    peak_tau = max(abs(tau_cmd));
     peak_dq  = max(abs(dq));
     min_q    = min(q);
     max_q    = max(q);
