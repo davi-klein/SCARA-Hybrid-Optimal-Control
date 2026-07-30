@@ -15,15 +15,15 @@ init;
 num_vars = 7;
 
 % Lower bounds
-LB = [0.0, 0.0, 10.0, 0.0, 0.0, 0.5, 10.0];
+LB = [0.0, 0.0, 10.0, 0.0, 0.0, 0.1, 5.0];
 
 % Upper bounds (maximum stiffness before mechanical resonance/chattering)
-UB = [9660.78, 2526.61, 307.49, 80.42, 5.0, 10.0, 300.0];
+UB = [10000, 10000, 1000, 1000, 15, 2, 300];
 
 % 4. Algorithm Configuration
 fprintf('Configuring Particle Swarm Optimization...\n');
 
-initial_seed = [4800.0, 1200.0, 150.0, 40.0, 2.5, 5.0, 150.0];
+initial_seed = [2000, 2000, 100, 100, 0, 2, 50]; % empirical gains as seed, injecting a stable solution
 
 options = optimoptions('particleswarm', ...
     'SwarmSize', 30, ...
@@ -77,10 +77,11 @@ pso_results.Kd_x = best_gains(3);
 pso_results.Kd_y = best_gains(4);
 pso_results.Kp_f = best_gains(5);
 pso_results.Ki_f = best_gains(6);
-pso_results.Kd_f = best_gains(7);
+pso_results.Kad_f = best_gains(7);
 pso_results.best_cost = best_cost;
 pso_results.optimization_time = optimization_time;
 pso_results.iterations = output.iterations;
+pso_results.funccount = output.funccount;
 
 timestamp = char(datetime('now', 'Format', 'yyyy_MM_dd_HHmm'));
 filename = fullfile('data', sprintf('optimal_gains_%s.mat', timestamp)); 
