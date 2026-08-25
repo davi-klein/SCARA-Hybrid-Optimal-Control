@@ -9,10 +9,12 @@ function J_total = cost_function_scara(particle)
     %
     % Returns:
     %     J_total (double): The aggregated scalar cost value.
+
     warning('off', 'all');
     
+    % 1. Parallel Computing Setup 
+    % Isolates cache and codegen folders to prevent file collisions during parallel pool execution.
     task = getCurrentTask();
-    
     if isempty(task)
         worker_id = 0; 
     else
@@ -29,16 +31,20 @@ function J_total = cost_function_scara(particle)
         'CodeGenFolder', worker_dir, ...
         'createDir', true);
     
+    % Initialize base workspace parameters required by the model
     evalin('base', 'init');
     
-   
+    % 2. Simulation Configuration via SimulationInput Object
     simIn = Simulink.SimulationInput('SCARAHybCtrl');
     simIn = simIn.setModelParameter('SimulationMode', 'normal');
     simIn = simIn.setModelParameter('Solver', 'ode15s');
     simIn = simIn.setModelParameter('MaxStep', '0.01');
+    simIn = simIn.setModelParameter('TimeOut', 15);
+    simIn = simIn.setModelParameter('MinStep', '1e-6');
     simIn = simIn.setModelParameter('RelTol', '1e-3');
     simIn = simIn.setModelParameter('StopTime', '20');
     
+    % Map the PSO particle to control gain matrices
     Kp_p_matrix = diag([particle(1), particle(2), 0.0]);
     Kd_p_matrix = diag([particle(3), particle(4), 0.0]);
     Kp_f_matrix = diag([0.0, 0.0, particle(5)]);
@@ -51,59 +57,64 @@ function J_total = cost_function_scara(particle)
     simIn = simIn.setVariable('Ki_f', Ki_f_matrix);
     simIn = simIn.setVariable('Kd_f', Kd_f_scalar);
     
+    % 3. Execute Simulation
     try
         out = sim(simIn);
     catch ME
+        % Discard highly unstable particles by returning a massive penalty cost
         J_total = 1e12;
         return;
     end
     
+    % 4. Data Extraction and Dimensionality Check
     t = out.tout;
     ep  = squeeze(out.error_p); 
     ef  = squeeze(out.error_f); 
     tau_cmd = squeeze(out.tau_cmd); 
     dq  = squeeze(out.dq);    
     q   = squeeze(out.q);
+    detJ = squeeze(out.detJ);
     
+    % Ensure data arrays are column-major for consistent matrix operations
     if size(ep, 1) == 3
         ep  = ep'; ef  = ef'; tau_cmd = tau_cmd';
         dq  = dq'; q   = q';
     end
-    detJ = squeeze(out.detJ);
     
-    % 1. ITAE Cost Calculation
+    % 5. Direct ITAE Cost Calculation (Geometric Error)
+    % Geometric tracking error in the XY plane (Euclidean distance)
     geometric_error = sqrt(ep(:, 1).^2 + ep(:, 2).^2);
+    
+    % Absolute force error in the Z axis
     force_error = abs(ef(:, 3));
     
+    % Calculate ITAE for both domains
     ITAE_pos = trapz(t, t .* geometric_error);
     ITAE_force = trapz(t, t .* force_error);
-
-    ITAE_pos_nominal = 0.3505; 
-    ITAE_force_nominal = 79.9975;
     
-    % Normalized costs
-    J_pos_norm = ITAE_pos / ITAE_pos_nominal;
-    J_force_norm = ITAE_force / ITAE_force_nominal;
+    % Direct Weighting (Replacing Nominal Normalization)
+    % W_pos heavily scales the geometric error (which is in millimeters) 
+    % to balance against the force magnitude (which is in Newtons).
+    W_pos = 1000.0; 
+    W_force = 1.0;
     
-    w_pos = 0.5;
-    w_force = 0.5;
+    J_base = (W_pos * ITAE_pos) + (W_force * ITAE_force);
     
-    % BAse Cost
-    J_base = (w_pos * J_pos_norm) + (w_force * J_force_norm);
+    % 6. Physical Constraints Limits
+    tau_max = [60.0, 30.0, 150.0];      % Max commanded torque/force limits
+    dq_max  = [4.71, 7.50, 1.0];        % Max velocity limits
+    q_min   = [-1.745, -2.443, -0.05];  % Lower joint limits
+    q_max   = [1.745, 2.443, 0.2];      % Upper joint limits
     
-    % 2. Limits and Constraints
-    tau_max = [60.0, 30.0, 150.0];      
-    dq_max  = [4.71, 7.50, 1.0];        
-    q_min   = [-1.745, -2.443, -0.05];  
-    q_max   = [1.745, 2.443, 0.2]; 
-
     peak_tau = max(abs(tau_cmd));
     peak_dq  = max(abs(dq));
     min_q    = min(q);
     max_q    = max(q);
     min_det  = min(abs(detJ));
     
-    % 3. Smooth Penalty Gradients
+    % 7. Smooth Penalty Gradients (Quadratic Violations)
+    % Utilizing squared differences yields a smooth, convex gradient map
+    % that prevents the optimization algorithm from trapping in local minima.
     tau_violation = sum(max(0, peak_tau - tau_max).^2);
     dq_violation  = sum(max(0, peak_dq - dq_max).^2);
     
@@ -111,15 +122,17 @@ function J_total = cost_function_scara(particle)
     q_violation_upper = sum(max(0, max_q - q_max).^2);
     q_violation = q_violation_lower + q_violation_upper;
     
+    % Kinematic singularity avoidance penalty
     singularity_threshold = 0.001;
     singularity_violation = max(0, singularity_threshold - min_det)^2;
     
-    W_penalty = 10000.0; 
+    W_penalty = 10000.0;
     penalty_cost = W_penalty * (tau_violation + dq_violation + q_violation + singularity_violation);
     
-    % 4. Total Aggregation
+    % 8. Total Cost Aggregation
     J_total = J_base + penalty_cost;
     
+    % Failsafe handling for NaNs or Infs generated by severe numerical instability
     if isnan(J_total) || isinf(J_total)
         J_total = 1e12;
     end
