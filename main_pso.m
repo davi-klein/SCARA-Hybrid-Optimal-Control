@@ -15,23 +15,24 @@ init;
 num_vars = 7;
 
 % Lower bounds
-LB = [0.0, 0.0, 10.0, 0.0, 0.0, 0.1, 5.0];
+LB = [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 5.0];
 
 % Upper bounds (maximum stiffness before mechanical resonance/chattering)
-UB = [10000, 10000, 1000, 1000, 15, 2, 300];
+UB = [221000, 221000, 7037, 7037, 15, 2, 358.5];
 
 % 4. Algorithm Configuration
 fprintf('Configuring Particle Swarm Optimization...\n');
 
-initial_seed = [2000, 2000, 100, 100, 0, 2, 50]; % empirical gains as seed, injecting a stable solution
+%initial_seed = [2000, 2000, 100, 100, 0, 2, 50]; % empirical gains as seed, injecting a stable solution
 
 options = optimoptions('particleswarm', ...
-    'SwarmSize', 30, ...
+    'SwarmSize', 50, ...
     'MaxIterations', 300, ...
+    'FunctionTolerance', 1e-3, ...
     'Display', 'iter', ...
     'UseParallel', true, ...
-    'PlotFcn', 'pswplotbestf', ...
-    'InitialSwarmMatrix', initial_seed); 
+    'PlotFcn', 'pswplotbestf');%, ...
+    %'InitialSwarmMatrix', initial_seed); 
 
 % 5. Main Optimization Loop
 fprintf('Starting Control Optimization...\n');
