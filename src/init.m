@@ -81,15 +81,15 @@ dq0 = [0.0; 0.0; 0.0];
 
 % 5. Controller Gains (Initial Tuning for PSO later)
 % Position Control Gains (XY Plane)
-Kp_p = diag([2000.0, 2000.0, 0.0]);
-Kd_p = diag([100.0, 100.0, 0.0]);
+Kp_p = diag([100000.0, 100000.0, 0.0]);
+Kd_p = diag([1000.0, 1000.0, 0.0]);
 
 % Force Control Gains (Z Axis)
 Kp_f = diag([0.0, 0.0, 0.0]);
-Ki_f = diag([0.0, 0.0, 2.0]);
+Ki_f = diag([0.0, 0.0, 3.0]);
 
 % Active Damping for Z-axis impact (Raibert-Craig addition)
-Kad_f = 50.0;
+Kad_f = 100;
 
 % Derivative filter
 N = 50;
